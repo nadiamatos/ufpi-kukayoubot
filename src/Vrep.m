@@ -24,7 +24,6 @@ classdef Vrep < handle
 
     end
 
-
     function [vrep, clientID] = startCommunicationSimulator(self)
 
       % Function to start communication between MATLAB and V-rep.
@@ -40,7 +39,6 @@ classdef Vrep < handle
 
     end
 
-
     function stopCommunicationSimulator(self)
 
     	% Function to stop communication between MATLAB and V-rep.
@@ -50,7 +48,6 @@ classdef Vrep < handle
       self.vrep.delete();
 
     end
-
 
     function playSimulator(self)
 
@@ -63,14 +60,12 @@ classdef Vrep < handle
 
     end
 
-
     function stopSimulator(self)
 
       self.vrep.simxStopSimulation(self.clientID, self.vrep.simx_opmode_oneshot);
       self.stopCommunicationSimulator();
 
     end
-
 
     function getObjectsSimulation(self)
 
@@ -85,7 +80,9 @@ classdef Vrep < handle
       [~, self.idAreas(2)] = self.vrep.simxGetObjectHandle(self.clientID, 'area_green', self.vrep.simx_opmode_oneshot_wait);
       [~, self.idAreas(3)] = self.vrep.simxGetObjectHandle(self.clientID, 'area_red', self.vrep.simx_opmode_oneshot_wait);
 
-      [~, self.idPlatform] = self.vrep.simxGetObjectHandle(self.clientID, 'youBot', self.vrep.simx_opmode_oneshot_wait);
+      %[~, self.idPlatform] = self.vrep.simxGetObjectHandle(self.clientID, 'youBot', self.vrep.simx_opmode_oneshot_wait);
+      [~, self.idPlatform] = self.vrep.simxGetObjectHandle(self.clientID, 'ME_Platfo2_sub1', self.vrep.simx_opmode_oneshot_wait);
+      %[~, self.idPlatform] = self.vrep.simxGetObjectHandle(self.clientID, 'youBot_ref', self.vrep.simx_opmode_oneshot_wait);
 
       [~, self.idWheel(1)] = self.vrep.simxGetObjectHandle(self.clientID, 'rollingJoint_fl', self.vrep.simx_opmode_oneshot_wait);
       [~, self.idWheel(2)] = self.vrep.simxGetObjectHandle(self.clientID, 'rollingJoint_fr', self.vrep.simx_opmode_oneshot_wait);
@@ -100,20 +97,17 @@ classdef Vrep < handle
 
     end
 
-
     function position = getPositionObject(self, id)
 
       [~, position] = self.vrep.simxGetObjectPosition(self.clientID, id, -1, self.vrep.simx_opmode_oneshot_wait);
 
     end
 
-
     function setPositionJoint(self, id, positionAngular)
 
       self.vrep.simxSetJointTargetPosition(self.clientID, id, deg2rad(positionAngular), self.vrep.simx_opmode_oneshot);
 
     end
-
 
     function positionAngular = getPositionJoint(self, id)
 
@@ -125,6 +119,13 @@ classdef Vrep < handle
     function setVelocityJoint(self, id, velocity)
 
       self.vrep.simxSetJointTargetVelocity(self.clientID, id, velocity, self.vrep.simx_opmode_oneshot);
+
+    end
+
+    function angles = getOrientationObject(self, id)
+
+      [~, angles] = self.vrep.simxGetObjectOrientation(self.clientID, id, -1, self.vrep.simx_opmode_streaming);
+      angles = rad2deg(angles(2)); % beta angle of the simulation      
 
     end
 
