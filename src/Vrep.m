@@ -10,6 +10,7 @@ classdef Vrep < handle
     idWheel = zeros(1, 4);
     idPlatform = 0;
     idDisc = 0;
+    idOrigemPlatform = 0;
 
   end
 
@@ -80,9 +81,8 @@ classdef Vrep < handle
       [~, self.idAreas(2)] = self.vrep.simxGetObjectHandle(self.clientID, 'area_green', self.vrep.simx_opmode_oneshot_wait);
       [~, self.idAreas(3)] = self.vrep.simxGetObjectHandle(self.clientID, 'area_red', self.vrep.simx_opmode_oneshot_wait);
 
-      %[~, self.idPlatform] = self.vrep.simxGetObjectHandle(self.clientID, 'youBot', self.vrep.simx_opmode_oneshot_wait);
-      [~, self.idPlatform] = self.vrep.simxGetObjectHandle(self.clientID, 'ME_Platfo2_sub1', self.vrep.simx_opmode_oneshot_wait);
-      %[~, self.idPlatform] = self.vrep.simxGetObjectHandle(self.clientID, 'youBot_ref', self.vrep.simx_opmode_oneshot_wait);
+      [~, self.idOrigemPlatform] = self.vrep.simxGetObjectHandle(self.clientID, 'youBot_ref', self.vrep.simx_opmode_oneshot_wait);
+      [~, self.idPlatform] = self.vrep.simxGetObjectHandle(self.clientID, 'youBot', self.vrep.simx_opmode_oneshot_wait);
 
       [~, self.idWheel(1)] = self.vrep.simxGetObjectHandle(self.clientID, 'rollingJoint_fl', self.vrep.simx_opmode_oneshot_wait);
       [~, self.idWheel(2)] = self.vrep.simxGetObjectHandle(self.clientID, 'rollingJoint_fr', self.vrep.simx_opmode_oneshot_wait);
@@ -125,7 +125,19 @@ classdef Vrep < handle
     function angles = getOrientationObject(self, id)
 
       [~, angles] = self.vrep.simxGetObjectOrientation(self.clientID, id, -1, self.vrep.simx_opmode_streaming);
-      angles = rad2deg(angles(2)); % beta angle of the simulation      
+      angles = rad2deg(angles); % 1 - alpha, 2 - beta, 3 - gamma
+
+      if (angles(1) == 0 && angles(2) == -90)
+        angles(2) = 0;
+      elseif (angles(1) == 0 && angles(2) == 90)
+        angles(2) = 180;
+      elseif (angles(1) >= 90)
+        angles(2) = 90 + angles(2);
+      elseif (angles(1) <= -90)
+        angles(2) = 270 - angles(2);
+      end
+
+      angles = angles(2); % beta angle of the simulation, in degree
 
     end
 

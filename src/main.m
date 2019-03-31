@@ -2,17 +2,14 @@ clc; clear all; close all; format short;
 
 rb = Robot();
 
-%rb.moveRobotToPosition([0 0 0]);
 while true
 
-  %rb.anglePlatform = rb.vrep.getOrientationObject(rb.vrep.idPlatform);
+  rb.moveRobotToPosition();
 
-  %disp('Here');
-  %disp(rb.anglePlatform);
-  %disp(90 - rb.anglePlatform);
-  %disp(mod(rb.anglePlatform + 180, 360) - 180);
+  % rb.vrep.getOrientationObject(rb.vrep.idPlatform)
 
-  rb.foe
+  %rb.positionTargetPlatform = rb.vrep.getPositionObject(rb.vrep.idDisc);
+  %beta = rb.calculateAngleBetweenPoints([0 0 0], rb.positionTargetPlatform)
 
 end
 % rb.vrep.stopSimulator();

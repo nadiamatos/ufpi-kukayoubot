@@ -31,11 +31,14 @@ classdef Robot < handle
 
     function forwardKinematicArm(self)
 
-      t1 = self.juntas(1); t2 = self.juntas(2); t3 = self.juntas(3);
-      t3 = self.juntas(3); t4 = self.juntas(4); t5 = self.juntas(5);
+      l0 = 0.147; a = 0.033; l1 = 0.155; l2 = 0.135; l3 = 0.218;
+      t1 = self.joint(1); t2 = self.joint(2); t3 = self.joint(3);
+      t3 = self.joint(3); t4 = self.joint(4); t5 = self.joint(5);
 
-      T01 = [cosd(t1)  -sind(t1) 0  0; ...
-             sind(t1)   cosd(t1) 0  0; ...
+      position = self.getPositionObject(self.vrep.idOrigemPlatform)
+
+      T01 = [cosd(t1)  -sind(t1) 0  position(1); ...
+             sind(t1)   cosd(t1) 0  position(2); ...
                0          0      1  l0; ...
                0          0      0  1];
 
@@ -65,10 +68,7 @@ classdef Robot < handle
              0  0  0  1];
 
       T = T01*T12*T23*T34*T45*T56;
-
-      fprintf('x = %f\n', T(1, 4));
-      fprintf('y = %f\n', T(2, 4));
-      fprintf('z = %f\n', T(3, 4));
+      fprintf('x = %f, y = %f, z = %f\n', T(1, 4), T(2, 4), T(3, 4));
 
     end
 
@@ -82,13 +82,24 @@ classdef Robot < handle
 
     function calculateVelocityPlatform(self)
 
-      dt = 10;
-      self.velocityPlatform = (self.positionTargetPlatform - self.positionCurrentPlatform)/dt;
+      dt = 1;
 
-      angleTarget = self.calculateAngleBetweenPoints(self.positionCurrentPlatform, self.positionTargetPlatform)
-      %angleTarget = self.calculateAngleBetweenPoints([0 0 0], self.positionTargetPlatform)
-      self.anglePlatform = self.vrep.getOrientationObject(self.vrep.idPlatform)
-      self.velocityPlatform(3) = deg2rad(angleTarget - self.anglePlatform)/dt;
+      theta = self.vrep.getOrientationObject(self.vrep.idPlatform)
+      beta = self.calculateAngleBetweenPoints([0 0 0], self.positionTargetPlatform)
+
+
+      dx = self.positionTargetPlatform(1) - self.positionCurrentPlatform(1);
+      dy = self.positionTargetPlatform(2) - self.positionCurrentPlatform(2);
+
+      v = sqrt(dx^2 + dy^2);
+
+      self.velocityPlatform = [v*cosd(theta), v*sind(theta), 0];
+
+      %vx = self.velocityPlatform(1);
+      %vy = self.velocityPlatform(2);
+
+      self.velocityPlatform(3) = v/self.radiusPlatform;
+      %self.velocityPlatform(3) = deg2rad(theta - beta)/dt;
 
       %self.controlLimitsVelocityPlatform();
 
@@ -98,7 +109,7 @@ classdef Robot < handle
 
       LIMIT_VELOCITY_SUPERIOR = 0.8;  % m/s
 
-      for i = 1 : length(self.velocityPlatform)
+      for i = 1 : length(self.velocityPlatform-1)
         if (self.velocityPlatform(i) > LIMIT_VELOCITY_SUPERIOR)
           self.velocityPlatform(i) = LIMIT_VELOCITY_SUPERIOR;
         end
@@ -133,6 +144,15 @@ classdef Robot < handle
 
     end
 
+    function sendPositionJointsArm(self)
+
+      for i = 1 : length(self.joint)
+        self.vrep.setPositionJoint(self.vrep.idJoints(i), self.joint(i));
+      end
+
+    end
+
+
     function sendVelocityJointsWheel(self)
 
       for i = 1 : length(self.wheel)
@@ -152,6 +172,10 @@ classdef Robot < handle
 
       % point1 - current point and point2 - target point
       angleBetweenPoints = atan2d( point2(2)-point1(2), point2(1)-point1(1) );
+
+      if (angleBetweenPoints < 0)
+        angleBetweenPoints = 360 + angleBetweenPoints;
+      end
       %angleBetweenPoints = atan2d( point2(1)-point1(1), point2(2)-point1(2) );
 
     end
@@ -162,7 +186,7 @@ classdef Robot < handle
 
       while (true)
 
-        if (distance < 0.2) break; end
+        if (distance < 0.5) break; end
 
         self.vrep.vrep.simxSynchronousTrigger(self.vrep.clientID);
         self.positionTargetPlatform = self.vrep.getPositionObject(self.vrep.idDisc);
