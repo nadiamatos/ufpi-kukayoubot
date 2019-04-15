@@ -1,15 +1,15 @@
-clc; clear all; close all; format short;
+clc; clear all; close all;
 
 rb = Robot();
 
 while true
 
-  rb.moveRobotToPosition();
-
-  % rb.vrep.getOrientationObject(rb.vrep.idPlatform)
-
-  %rb.positionTargetPlatform = rb.vrep.getPositionObject(rb.vrep.idDisc);
-  %beta = rb.calculateAngleBetweenPoints([0 0 0], rb.positionTargetPlatform)
+  rb.mobilePlatform.moveRobotToPosition();
+  if (rb.mobilePlatform.velocityModulePlatform == 0)
+    break;
+  end
 
 end
-% rb.vrep.stopSimulator();
+
+rb.vrep.stopSimulator();
+disp('movido!!');
