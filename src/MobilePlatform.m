@@ -48,7 +48,10 @@ classdef MobilePlatform < handle
     end
 
     function calculateAngleDesired(self)
-      self.angleDesired = self.angleBetweenPlatformPointTarget - self.anglePlatform;
+      self.angleDesired = self.anglePlatform - self.angleBetweenPlatformPointTarget;
+      % if (self.angleDesired < 0)
+        % self.angleDesired = 360 + self.angleDesired;
+      % end
     end
 
     function calculateVelocityAngularPlatform(self)
@@ -68,10 +71,12 @@ classdef MobilePlatform < handle
     end
 
     function controlLimitsVelocityPlatform(self)
-      LIMIT_VELOCITY_SUPERIOR = 0.5;  % m/s
-      for i = 1 : length(self.velocityPlatform)-1
+      LIMIT_VELOCITY_SUPERIOR = 0.005;  % m/s
+      for i = 1 : length(self.velocityPlatform-1)
         if (self.velocityPlatform(i) > LIMIT_VELOCITY_SUPERIOR)
           self.velocityPlatform(i) = LIMIT_VELOCITY_SUPERIOR;
+        elseif (self.velocityPlatform(i) < -LIMIT_VELOCITY_SUPERIOR)
+          self.velocityPlatform(i) = -LIMIT_VELOCITY_SUPERIOR;
         end
       end
     end
@@ -81,30 +86,32 @@ classdef MobilePlatform < handle
       for i = 1 : length(self.velocityWheels)
         if (self.velocityWheels(i) > LIMIT_VELOCITY_SUPERIOR)
           self.velocityWheels(i) = LIMIT_VELOCITY_SUPERIOR;
+        elseif (self.velocityWheels(i) < -LIMIT_VELOCITY_SUPERIOR)
+          self.velocityWheels(i) = -LIMIT_VELOCITY_SUPERIOR;
         end
       end
     end
 
     function calculateVelocityLinearPlatform(self)
       dist = self.calculateDistanceBetweenPoints(self.positionCurrentPlatform(1, 1:2), ...
-                                                 self.positionTargetPlatform(1, 1:2))
-      %self.velocityModulePlatform = dist/8;
+                                                 self.positionTargetPlatform(1, 1:2));
       self.velocityModulePlatform = dist;
+      % self.velocityModulePlatform = dist/1000;
       self.velocityPlatform(1:2, 1) = self.velocityModulePlatform*[-cosd(self.angleDesired) ...
                                                                     sind(self.angleDesired)];
       self.controlLimitsVelocityPlatform();
     end
 
     function sendVelocityJointsWheel(self)
-      for i = 1 : length(self.wheel)
-        self.vrep.setVelocityJoint(self.vrep.idWheel(i), (self.velocityWheels(i)));
-        %self.vrep.setVelocityJoint(self.vrep.idWheel(i), rad2deg(self.velocityWheels(i)));
+      for i = 1 : length(self.velocityWheels)
+        % self.vrep.setVelocityJoint(self.vrep.idWheel(i), (self.velocityWheels(i)));
+        self.vrep.setVelocityJoint(self.vrep.idWheel(i), rad2deg(self.velocityWheels(i)));
       end
     end
 
     function distanceBetweenPoints = calculateDistanceBetweenPoints(self, point1, point2)
       % in meters
-      distanceBetweenPoints = ceil(pdist([point1; point2], 'euclidean'));
+      distanceBetweenPoints = (pdist([point1; point2], 'euclidean'));
     end
 
     function angleBetweenPoints = calculateAngleBetweenPoints(self, point1, point2)
@@ -117,18 +124,30 @@ classdef MobilePlatform < handle
     end
 
     function controlPlatform(self)
-      % self.inverseKinematicPlatform(0, 0, self.velocityPlatform(3));
+      self.inverseKinematicPlatform(0, 0, self.velocityPlatform(3));
+      self.sendVelocityJointsWheel();
       self.inverseKinematicPlatform(self.velocityPlatform(1), ...
                                     self.velocityPlatform(2), ...
-                                    self.velocityPlatform(3));
+                                    0);
       self.sendVelocityJointsWheel();
     end
 
     function moveRobotToPosition(self)
+
+      dist = inf;
       self.updateDataOfTheRobot();
-      self.vrep.pauseCommunication(true);
-      self.controlPlatform();
-      self.vrep.pauseCommunication(false);
+
+      while dist > 0
+        dist = self.calculateDistanceBetweenPoints(self.positionCurrentPlatform(1, 1:2), ...
+                                                   self.positionTargetPlatform(1, 1:2));
+        self.updateDataOfTheRobot();
+        % self.vrep.pauseCommunication(true);
+        self.controlPlatform();
+        % self.vrep.pauseCommunication(false);
+        if (dist < 0.04)
+          break; disp('aqui');
+        end
+      end
     end
 
   end
